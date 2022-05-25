@@ -10,15 +10,18 @@ public class MainMenu {
     private JButton startGame;
     private JButton connectButton;
     private JLabel title;
+    private GameFrame gameFrame;
 
-    public MainMenu(JFrame f, GameInfo g, GameFrame gf) {
-        f.setContentPane(panel);
-        f.setVisible(true);
+    public MainMenu(JFrame frame) {
+        frame.setContentPane(panel);
+        frame.setVisible(true);
 
         startGame.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-
+                frame.setVisible(false);
+                gameFrame = new GameFrame();
+                gameFrame.startGame();
             }
         });
     }

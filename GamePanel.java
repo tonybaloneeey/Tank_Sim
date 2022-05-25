@@ -15,12 +15,9 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
 {
     static final int FRAME_HEIGHT = 720;
     static final int FRAME_WIDTH = 1280;
-    static final int LOCALTANK_PNG_WIDTH = 134;
-    static final int LOCALTANK_PNG_HEIGHT = 204;
-    static final int REMOTETANK_PNG_WIDTH = 134;
-    static final int REMOTETANK_PNG_HEIGHT = 204;
+    static final int playerTank_PNG_WIDTH = 134;
+    static final int playerTank_PNG_HEIGHT = 204;
     private int focus = JComponent.WHEN_IN_FOCUSED_WINDOW;
-    //private boolean up, down, left, right;
     private final String RIGHT = "right";
     private final String LEFT = "left";
     private final String UP = "up";
@@ -41,15 +38,13 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
     private int mouseLocX, mouseLocY;
     private double mouseDist, mouseDistX, mouseDistY;
     private double mouseDegree;
-    private GameInfo game;
-    //private GameNetwork net;
     private Timer timer;
-    private Tank localTank, remoteTank;
+    private Tank playerTank;
     private BufferedImage blueTankBase, redTankBase, blueTankTurret, redTankTurret;
     private moveAction leftpress, rightpress, uppress, downpress, leftrelease, rightrelease, uprelease, downrelease;
-    public GamePanel(GameInfo g) {
-        game = g;
-        localTank = g.getPlayerTank();
+    public GamePanel() {
+        //game = g;
+        playerTank = new Tank(50, 50, Color.white);
         this.addMouseListener(this);
 
         try {
@@ -95,7 +90,7 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
 
     @Override
     public void mouseClicked(MouseEvent e) {
-        localTank.setShooting(true);
+        playerTank.setShooting(true);
     }
 
     @Override
@@ -158,8 +153,8 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
     }
 
     public void update() {
-        centerTurret = new Point2D.Double(localTank.xPos() + 67, localTank.yPos() + 125);
-        centerBase = new Point2D.Double(localTank.xPos() + (LOCALTANK_PNG_WIDTH / 2), localTank.yPos() + (LOCALTANK_PNG_HEIGHT / 2));
+        centerTurret = new Point2D.Double(playerTank.xPos() + 67, playerTank.yPos() + 125);
+        centerBase = new Point2D.Double(playerTank.xPos() + (playerTank_PNG_WIDTH / 2), playerTank.yPos() + (playerTank_PNG_HEIGHT / 2));
 
         mouseLoc = MouseInfo.getPointerInfo().getLocation();
         SwingUtilities.convertPointFromScreen(mouseLoc, this);
@@ -173,19 +168,19 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
         mouseDegree = angleInRelation(mouseLoc, centerTurret);
 
         if(moveUp) {
-            localTank.setLocation(localTank.xPos() + (MOVEMENT_SPEED * Math.sin(Math.toRadians(localTank.getBaseDegree()))), localTank.yPos() - MOVEMENT_SPEED * Math.cos(Math.toRadians(localTank.getBaseDegree())));
+            playerTank.setLocation(playerTank.xPos() + (MOVEMENT_SPEED * Math.sin(Math.toRadians(playerTank.getBaseDegree()))), playerTank.yPos() - MOVEMENT_SPEED * Math.cos(Math.toRadians(playerTank.getBaseDegree())));
         }
         if(moveDown) {
-            localTank.setLocation(localTank.xPos() - (MOVEMENT_SPEED * Math.sin(Math.toRadians(localTank.getBaseDegree()))), localTank.yPos() + MOVEMENT_SPEED * Math.cos(Math.toRadians(localTank.getBaseDegree())));
+            playerTank.setLocation(playerTank.xPos() - (MOVEMENT_SPEED * Math.sin(Math.toRadians(playerTank.getBaseDegree()))), playerTank.yPos() + MOVEMENT_SPEED * Math.cos(Math.toRadians(playerTank.getBaseDegree())));
         }
-        if(rotateLeft && localTank.xPos() >= 0) {
-            localTank.setBaseDegree(localTank.getBaseDegree() - 5);
+        if(rotateLeft && playerTank.xPos() >= 0) {
+            playerTank.setBaseDegree(playerTank.getBaseDegree() - 5);
         }
-        if(rotateRight && localTank.xPos() + localTank.getWidth() <= FRAME_WIDTH) {
-            localTank.setBaseDegree(localTank.getBaseDegree() + 5);
+        if(rotateRight && playerTank.xPos() + playerTank.getWidth() <= FRAME_WIDTH) {
+            playerTank.setBaseDegree(playerTank.getBaseDegree() + 5);
         }
 
-        mouseDegree -= localTank.getBaseDegree();
+        mouseDegree -= playerTank.getBaseDegree();
 
         this.setBackground(Color.white);
         repaint();
@@ -199,27 +194,19 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
 
         g2D.fillRect(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
 
-        paintLocalBase(g2D);
+        paintBase(g2D);
 
-        localTank.setTurretDegree(mouseDegree);
-        g2D.rotate(Math.toRadians(localTank.getTurretDegree()), localTank.xPos() + 67, localTank.yPos() + 125);
-        paintLocalTurret(g2D);
+        playerTank.setTurretDegree(mouseDegree);
+        g2D.rotate(Math.toRadians(playerTank.getTurretDegree()), playerTank.xPos() + 67, playerTank.yPos() + 125);
+        paintTurret(g2D);
     }
-    public void paintLocalBase(Graphics2D g2D) {
-        g2D.rotate(Math.toRadians(localTank.getBaseDegree()), centerBase.getX(), centerBase.getY());
-        g2D.drawImage(blueTankBase, (int) localTank.xPos(), (int) localTank.yPos(), LOCALTANK_PNG_WIDTH, LOCALTANK_PNG_HEIGHT, null);
-    }
-
-    public void paintLocalTurret(Graphics2D g2D) {
-        g2D.drawImage(blueTankTurret, (int) localTank.xPos()+33, (int) localTank.yPos() - 10, 68, 176, null);
+    public void paintBase(Graphics2D g2D) {
+        g2D.rotate(Math.toRadians(playerTank.getBaseDegree()), centerBase.getX(), centerBase.getY());
+        g2D.drawImage(blueTankBase, (int) playerTank.xPos(), (int) playerTank.yPos(), playerTank_PNG_WIDTH, playerTank_PNG_HEIGHT, null);
     }
 
-    public void paintRemoteBase(Graphics2D g2D) {
-        g2D.drawImage(redTankBase, (int) remoteTank.xPos(), (int) remoteTank.yPos(), REMOTETANK_PNG_WIDTH, REMOTETANK_PNG_HEIGHT, null);
-    }
-
-    public void paintRemoteTurret(Graphics2D g2D) {
-        g2D.drawImage(redTankTurret, (int) remoteTank.xPos() + 33, (int) remoteTank.yPos() - 10, 68, 176, null);
+    public void paintTurret(Graphics2D g2D) {
+        g2D.drawImage(blueTankTurret, (int) playerTank.xPos()+33, (int) playerTank.yPos() - 10, 68, 176, null);
     }
 
     /**
