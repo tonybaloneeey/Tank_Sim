@@ -7,12 +7,10 @@ public class MainMenu {
     private JPanel panel;
     private JTextField playerNameTextField;
     private JButton startGame;
-    private JButton connectButton;
     private JLabel playerName;
     private JLabel title;
     private String playerInput;
     private GameFrame gameFrame;
-    private Font titleFont;
     public MainMenu(JFrame frame) {
         frame.setContentPane(panel);
         frame.setVisible(true);
