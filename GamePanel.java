@@ -43,8 +43,8 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
     private BufferedImage blueTankBase, redTankBase, blueTankTurret, redTankTurret;
     private moveAction leftpress, rightpress, uppress, downpress, leftrelease, rightrelease, uprelease, downrelease;
     public GamePanel() {
-        //game = g;
         playerTank = new Tank(50, 50, Color.white);
+        this.centerBase = new Point2D.Double(0,0);
         this.addMouseListener(this);
 
         try {
@@ -208,10 +208,6 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
     public void paintTurret(Graphics2D g2D) {
         g2D.drawImage(blueTankTurret, (int) playerTank.xPos()+33, (int) playerTank.yPos() - 10, 68, 176, null);
     }
-
-    /**
-     * @param e the event to be processed
-     */
     @Override
     public void actionPerformed(ActionEvent e) {
         update();
