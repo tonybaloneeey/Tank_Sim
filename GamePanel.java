@@ -94,6 +94,7 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
     @Override
     public void mousePressed(MouseEvent e) {
         playerTank.setInitialTurretDegree(playerTank.getTurretDegree());
+        System.out.println(playerTank.getInitialTurretDegree());
         playerTank.setShooting(true);
     }
 
@@ -187,6 +188,7 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
     }
     @Override
     public void paint(Graphics g) {
+        //System.out.println(playerTank.getInitialTurretDegree());
         this.setBackground(Color.white);
         Graphics2D g2D = (Graphics2D) g;
         g2D.setBackground(Color.white);
@@ -208,23 +210,26 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
     }
 
     public void paintTurret(Graphics2D g2D) {
-        g2D.drawImage(blueTankTurret, (int) playerTank.xPos()+33, (int) playerTank.yPos() - 10, 68, 176, null);
+        g2D.drawImage(blueTankTurret, (int) playerTank.xPos() + 33, (int) playerTank.yPos() - 10, 68, 176, null);
     }
     
     public void paintBullet(Graphics2D g2D) {
         System.out.println(playerTank.getBulletX() +" | "+ playerTank.getBulletY());
         g2D.setColor(Color.black);
+        double initialDegree = playerTank.getInitialTurretDegree();
         if(playerTank.isShooting()) {
-            if((playerTank.getBulletX() < 1280 && playerTank.getBulletX() < 720) && (playerTank.getBulletX() > 0 && playerTank.getBulletX() > 0)) {
-                playerTank.setBulletPos(playerTank.getBulletX() + (BULLET_SPEED * Math.sin(Math.toRadians(playerTank.getInitialTurretDegree()))), playerTank.getBulletY() - (BULLET_SPEED * Math.cos(Math.toRadians(playerTank.getInitialTurretDegree()))));
-                g2D.fillOval((int) playerTank.getBulletX(), (int) playerTank.getBulletY(), 15, 15);
+            System.out.println(playerTank.getBulletX() +" | "+ playerTank.getBulletY());
+            if((playerTank.getBulletX() <= 1500 && playerTank.getBulletY() <= 1000) && (playerTank.getBulletX() >= 0 && playerTank.getBulletY() >= 0)) {
+                double newX = (BULLET_SPEED * (Math.sin(Math.toRadians(initialDegree))));
+                double newY = (BULLET_SPEED * (Math.cos(Math.toRadians(initialDegree))));
+                playerTank.setBulletPos(playerTank.getBulletX() + newX, playerTank.getBulletY() + newY);
+                g2D.fillRect((int) playerTank.getBulletX(), (int) playerTank.getBulletY(), 8, 18);
             }
             else {
                 playerTank.setBulletPos(playerTank.getEndTurret());
                 playerTank.setShooting(false);
             }
         }
-        //playerTank.setShooting(false);
     }
     @Override
     public void actionPerformed(ActionEvent e) {
