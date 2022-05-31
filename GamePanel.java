@@ -5,18 +5,17 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Objects;
 
 @SuppressWarnings("ALL")
-public class GamePanel extends JPanel implements ActionListener, MouseListener
-{
+public class GamePanel extends JPanel implements ActionListener, MouseListener {
     static final int FRAME_HEIGHT = 720;
     static final int FRAME_WIDTH = 1280;
-    static final int playerTank_PNG_WIDTH = 134;
-    static final int playerTank_PNG_HEIGHT = 204;
     private int focus = JComponent.WHEN_IN_FOCUSED_WINDOW;
     private final String RIGHT = "right";
     private final String LEFT = "left";
@@ -31,26 +30,27 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
     private final String UPR = "upr";
     private final String DOWNR = "downr";
     private final int MOVEMENT_SPEED = 5;
-    private final int BULLET_SPEED = 25;
     private boolean moveUp, moveDown, rotateRight, rotateLeft;
     private Point mouseLoc;
-    private Point topMid, bottomMid;
     private int mouseLocX, mouseLocY;
     private double mouseDist, mouseDistX, mouseDistY;
     private double mouseDegree;
     private Timer timer;
-    private Tank playerTank;
-    private BufferedImage blueTankBase, redTankBase, blueTankTurret, redTankTurret;
+    private Tank tank;
+    private Point2D fromPoint, toPoint;
+    private BufferedImage blueTankBase, blueTankTurret;
     private moveAction leftpress, rightpress, uppress, downpress, leftrelease, rightrelease, uprelease, downrelease;
+    private ArrayList<Bullet> bullets = new ArrayList<>(8);
+
     public GamePanel() {
-        playerTank = new Tank(50, 50, Color.white);
+        tank = new Tank(500,300, 4);
         this.addMouseListener(this);
+        toPoint = new Point2D.Double(0,0);
+        fromPoint = new Point2D.Double(0,0);
 
         try {
             blueTankBase = ImageIO.read(Objects.requireNonNull(getClass().getResource("/resources/bluetankbase.png")));
-            redTankBase = ImageIO.read(Objects.requireNonNull(getClass().getResource("/resources/redtankbase.png")));
             blueTankTurret = ImageIO.read(Objects.requireNonNull(getClass().getResource("/resources/bluetankturret.png")));
-            redTankTurret = ImageIO.read(Objects.requireNonNull(getClass().getResource("/resources/redtankturret.png")));
         } catch (IOException e) {
             System.out.println(e);
             throw new RuntimeException(e);
@@ -88,14 +88,17 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
     }
 
     @Override
-    public void mouseClicked(MouseEvent e) {
+    public void mousePressed(MouseEvent e) {
+        fromPoint = getBusinessEndOfBarrel();
+        double outOfViewRadius = Math.max(tank.getTankWidth(), tank.getTankHeight()) * 2d;
+        toPoint = getPointOnCircle(tank.getTurretAngle() + tank.getBaseAngle(), -90, outOfViewRadius, tank.getCenterBase().getX(), tank.getCenterBase().getY());
+
+        Bullet bullet = new Bullet(fromPoint, toPoint, 750);
+        bullets.add(bullet);
     }
 
     @Override
-    public void mousePressed(MouseEvent e) {
-        playerTank.setInitialTurretDegree(playerTank.getTurretDegree());
-        System.out.println(playerTank.getInitialTurretDegree());
-        playerTank.setShooting(true);
+    public void mouseClicked(MouseEvent e) {
     }
 
     @Override
@@ -114,9 +117,9 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
     }
 
     private class moveAction extends AbstractAction {
-
         String direction;
         int state;
+
         moveAction(String direction, int state) {
             this.direction = direction;
             this.state = state;
@@ -124,117 +127,115 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
 
         @Override
         public void actionPerformed(ActionEvent e) {
-            if(direction.equals(RIGHT) && state == 1) {
+            if (direction.equals(RIGHT) && state == 1) {
                 rotateRight = true;
             }
-            if(direction.equals(LEFT) && state == 1) {
+            if (direction.equals(LEFT) && state == 1) {
                 rotateLeft = true;
             }
-            if(direction.equals(UP) && state == 1) {
+            if (direction.equals(UP) && state == 1) {
                 moveUp = true;
             }
-            if(direction.equals(DOWN) && state == 1) {
+            if (direction.equals(DOWN) && state == 1) {
                 moveDown = true;
             }
 
-            if(direction.equals(RIGHT) && state == 0) {
+            if (direction.equals(RIGHT) && state == 0) {
                 rotateRight = false;
             }
-            if(direction.equals(LEFT) && state == 0) {
+            if (direction.equals(LEFT) && state == 0) {
                 rotateLeft = false;
             }
-            if(direction.equals(UP) && state == 0) {
+            if (direction.equals(UP) && state == 0) {
                 moveUp = false;
             }
-            if(direction.equals(DOWN) && state == 0) {
+            if (direction.equals(DOWN) && state == 0) {
                 moveDown = false;
             }
         }
     }
 
     public void update() {
-        playerTank.setCenterTurret(new Point2D.Double(playerTank.xPos() + 67, playerTank.yPos() + 125));
-        playerTank.setEndTurret(new Point2D.Double(playerTank.xPos() + (Math.sin(Math.toRadians(playerTank.getTurretDegree()))) + 59, playerTank.yPos() - (Math.cos(Math.toRadians(playerTank.getTurretDegree()))) - 25));
-        playerTank.setCenterBase(new Point2D.Double(playerTank.xPos() + (playerTank_PNG_WIDTH / 2), playerTank.yPos() + (playerTank_PNG_HEIGHT / 2)));
+        tank.setCenterTurret(new Point2D.Double(tank.xPos() + 67, tank.yPos() + 125));
+        tank.setEndTurret(new Point2D.Double(tank.xPos() + ((Math.sin(Math.toRadians(tank.getTurretAngle())))) + 63, tank.yPos() + ((Math.cos(Math.toRadians(tank.getTurretAngle())))) - 25));
+        tank.setCenterBase(new Point2D.Double(tank.xPos() + (tank.getTankWidth() / 2), tank.yPos() + (tank.getTankHeight() / 2)));
 
+        // Gets the mouse location relative to the JFrame
         mouseLoc = MouseInfo.getPointerInfo().getLocation();
         SwingUtilities.convertPointFromScreen(mouseLoc, this);
 
+        // Gets the X and Y position of the mouse
         mouseLocX = (int) mouseLoc.getX();
         mouseLocY = (int) mouseLoc.getY();
 
-        mouseDistX = mouseLocX - playerTank.getCenterTurret().getX();
-        mouseDistY = mouseLocY - playerTank.getCenterTurret().getY();
+        // Gets the distance between the mouse and the tank
+        mouseDistX = mouseLocX - tank.getCenterTurret().getX();
+        mouseDistY = mouseLocY - tank.getCenterTurret().getY();
 
-        mouseDegree = angleInRelation(mouseLoc, playerTank.getCenterTurret());
+        // Gets the angle of the mouse relative to the center of the turret
+        mouseDegree = angleInRelation(mouseLoc, tank.getCenterTurret());
+        mouseDegree = mouseDegree - tank.getBaseAngle();
+        tank.setTurretAngle(mouseDegree);
 
-        if(moveUp) {
-            playerTank.setLocation(playerTank.xPos() + (MOVEMENT_SPEED * Math.sin(Math.toRadians(playerTank.getBaseDegree()))), playerTank.yPos() - MOVEMENT_SPEED * Math.cos(Math.toRadians(playerTank.getBaseDegree())));
+        if (moveUp) {
+            tank.setLocation(tank.xPos() + (MOVEMENT_SPEED * Math.sin(Math.toRadians(tank.getBaseAngle()))), tank.yPos() - MOVEMENT_SPEED * Math.cos(Math.toRadians(tank.getBaseAngle())));
         }
-        if(moveDown) {
-            playerTank.setLocation(playerTank.xPos() - (MOVEMENT_SPEED * Math.sin(Math.toRadians(playerTank.getBaseDegree()))), playerTank.yPos() + MOVEMENT_SPEED * Math.cos(Math.toRadians(playerTank.getBaseDegree())));
+        if (moveDown) {
+            tank.setLocation(tank.xPos() - (MOVEMENT_SPEED * Math.sin(Math.toRadians(tank.getBaseAngle()))), tank.yPos() + MOVEMENT_SPEED * Math.cos(Math.toRadians(tank.getBaseAngle())));
         }
-        if(rotateLeft && playerTank.xPos() >= 0) {
-            playerTank.setBaseDegree(playerTank.getBaseDegree() - 5);
+        if (rotateLeft && tank.xPos() >= 0) {
+            tank.setBaseAngle((tank.getBaseAngle() - 5) % 360);
         }
-        if(rotateRight && playerTank.xPos() + playerTank.getWidth() <= FRAME_WIDTH) {
-            playerTank.setBaseDegree(playerTank.getBaseDegree() + 5);
+        if (rotateRight && tank.xPos() + tank.getTankWidth() <= FRAME_WIDTH) {
+            tank.setBaseAngle((tank.getBaseAngle() + 5) % 360);
         }
 
-        mouseDegree -= playerTank.getBaseDegree();
+        ArrayList<Bullet> outOfScopeProjectiles = new ArrayList<>(8);
+        Rectangle visibleBounds = new Rectangle(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
+        for (Bullet bullet : bullets) {
+            bullet.tick();
+            Point2D current = bullet.getLocation();
+            if (!visibleBounds.contains(current)) {
+                outOfScopeProjectiles.add(bullet);
+            }
+        }
+        bullets.removeAll(outOfScopeProjectiles);
 
-        this.setBackground(Color.white);
         repaint();
     }
-    @Override
-    public void paint(Graphics g) {
-        //System.out.println(playerTank.getInitialTurretDegree());
-        this.setBackground(Color.white);
-        Graphics2D g2D = (Graphics2D) g;
-        g2D.setBackground(Color.white);
-        g2D.setColor(Color.white);
 
+    @Override
+    public void paintComponent(Graphics g) {
+        Graphics2D master = (Graphics2D) g;
+        Graphics2D g2D = (Graphics2D) master.create();
+
+        // Clears the screen back to white
+        g2D.setColor(Color.white);
         g2D.fillRect(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
 
-        paintBase(g2D);
+        // Paints the base of the tank
+        Graphics2D tankBase = (Graphics2D) g2D.create();
+        tankBase.rotate(Math.toRadians(tank.getBaseAngle()), tank.getCenterBase().getX(), tank.getCenterBase().getY());
+        tankBase.drawImage(blueTankBase, (int) tank.xPos(), (int) tank.yPos(), tank.getTankWidth(), tank.getTankHeight(), null);
 
-        playerTank.setTurretDegree(mouseDegree);
-        g2D.rotate(Math.toRadians(playerTank.getTurretDegree()), playerTank.xPos() + 67, playerTank.yPos() + 125);
-        paintTurret(g2D);
+        // Paints the turret of the tank
+        Graphics2D tankTurret = (Graphics2D) tankBase.create();
+        tankTurret.rotate(Math.toRadians(tank.getTurretAngle()), tank.xPos() + 67, tank.yPos() + 125);
+        tankTurret.drawImage(blueTankTurret, (int) tank.xPos() + 33, (int) tank.yPos() - 10, tank.getTurretWidth(), tank.getTurretHeight(), null);
 
-        paintBullet(g2D);
-    }
-    public void paintBase(Graphics2D g2D) {
-        g2D.rotate(Math.toRadians(playerTank.getBaseDegree()), playerTank.getCenterBase().getX(), playerTank.getCenterBase().getY());
-        g2D.drawImage(blueTankBase, (int) playerTank.xPos(), (int) playerTank.yPos(), playerTank_PNG_WIDTH, playerTank_PNG_HEIGHT, null);
-    }
-
-    public void paintTurret(Graphics2D g2D) {
-        g2D.drawImage(blueTankTurret, (int) playerTank.xPos() + 33, (int) playerTank.yPos() - 10, 68, 176, null);
-    }
-    
-    public void paintBullet(Graphics2D g2D) {
-        System.out.println(playerTank.getBulletX() +" | "+ playerTank.getBulletY());
-        g2D.setColor(Color.black);
-        double initialDegree = playerTank.getInitialTurretDegree();
-        if(playerTank.isShooting()) {
-            System.out.println(playerTank.getBulletX() +" | "+ playerTank.getBulletY());
-            if((playerTank.getBulletX() <= 1500 && playerTank.getBulletY() <= 1000) && (playerTank.getBulletX() >= 0 && playerTank.getBulletY() >= 0)) {
-                double newX = (BULLET_SPEED * (Math.sin(Math.toRadians(initialDegree))));
-                double newY = (BULLET_SPEED * (Math.cos(Math.toRadians(initialDegree))));
-                playerTank.setBulletPos(playerTank.getBulletX() + newX, playerTank.getBulletY() + newY);
-                g2D.fillRect((int) playerTank.getBulletX(), (int) playerTank.getBulletY(), 8, 18);
-            }
-            else {
-                playerTank.setBulletPos(playerTank.getEndTurret());
-                playerTank.setShooting(false);
-            }
+        // Paints the bullets
+        for (Bullet bullet : bullets) {
+            Point2D currentBulletLoc = bullet.getLocation();
+            master.fill(new Ellipse2D.Double(currentBulletLoc.getX() - 2, currentBulletLoc.getY() - 2, 4, 4));
         }
+        g2D.dispose();
     }
+
     @Override
     public void actionPerformed(ActionEvent e) {
         update();
     }
+
     public double angleInRelation(Point mouseLoc, Point2D tankLoc) {
         double angle = Math.toDegrees(Math.atan2((mouseLoc.getY() - tankLoc.getY()), mouseLoc.getX() - tankLoc.getX()));
         angle += 90;
@@ -243,9 +244,32 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener
         }
         return angle;
     }
-    public void startGame()
-    {
-        timer = new Timer(1000/60, this);
+
+    public static Point2D getPointOnCircle(double degress, double offset, double radius) {
+        double rads = Math.toRadians(degress + offset); // 0 becomes the top
+
+        // Calculates the outer point of the line
+        double xPosy = Math.cos(rads) * radius;
+        double yPosy = Math.sin(rads) * radius;
+
+        return new Point2D.Double(xPosy, yPosy);
+    }
+
+    public static Point2D getPointOnCircle(double degress, double offset, double radius, double centerX, double centerY) {
+        Point2D poc = getPointOnCircle(degress, offset, radius);
+        return new Point2D.Double(poc.getX() + centerX, poc.getY() + centerY);
+    }
+
+    public Point2D getBusinessEndOfBarrel() {
+        // Calculates the point at the end of the turret
+        double centerX = tank.getCenterBase().getX();
+        double centerY = tank.getCenterBase().getY();
+
+        return getPointOnCircle(tank.getTurretAngle() + tank.getBaseAngle(), -90, Math.max(tank.getTankWidth(), tank.getTankHeight()) / 2, centerX, centerY);
+    }
+
+    public void startGame() {
+        timer = new Timer(1000 / 60, this);
         timer.start();
     }
 }
