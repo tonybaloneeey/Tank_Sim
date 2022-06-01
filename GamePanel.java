@@ -42,12 +42,16 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
     private moveAction leftpress, rightpress, uppress, downpress, leftrelease, rightrelease, uprelease, downrelease;
     private ArrayList<Bullet> bullets = new ArrayList<>(8);
 
+    /**
+     * Instantiates the gamePanel
+     */
     public GamePanel() {
         tank = new Tank(500,300, 4);
         this.addMouseListener(this);
         toPoint = new Point2D.Double(0,0);
         fromPoint = new Point2D.Double(0,0);
 
+        // https://stackoverflow.com/questions/1978445/get-image-from-relative-path
         try {
             blueTankBase = ImageIO.read(Objects.requireNonNull(getClass().getResource("/resources/bluetankbase.png")));
             blueTankTurret = ImageIO.read(Objects.requireNonNull(getClass().getResource("/resources/bluetankturret.png")));
@@ -56,6 +60,7 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
             throw new RuntimeException(e);
         }
 
+        // https://stackoverflow.com/questions/46985936/using-keybinding-and-action-map-in-java-for-shortcut-keys-for-buttons
         leftpress = new moveAction(LEFT, 1);
         rightpress = new moveAction(RIGHT, 1);
         uppress = new moveAction(UP, 1);
@@ -87,6 +92,10 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
         startGame();
     }
 
+    /**
+     * @param e the event to be processed
+     */
+    // https://stackoverflow.com/questions/2668718/java-mouselistener
     @Override
     public void mousePressed(MouseEvent e) {
         fromPoint = getBusinessEndOfBarrel();
@@ -120,11 +129,19 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
         String direction;
         int state;
 
+        /**
+         * Creates a moveAction object with a direction and state
+         * @param direction - the direction of the action
+         * @param state - the state of the action
+         */
         moveAction(String direction, int state) {
             this.direction = direction;
             this.state = state;
         }
 
+        /**
+         * @param e the event to be processed
+         */
         @Override
         public void actionPerformed(ActionEvent e) {
             if (direction.equals(RIGHT) && state == 1) {
@@ -155,12 +172,16 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
         }
     }
 
+    /**
+     * The update method being called by the timer that is constantly refreshing all actions happening on the screen
+     */
     public void update() {
         tank.setCenterTurret(new Point2D.Double(tank.xPos() + 67, tank.yPos() + 125));
         tank.setEndTurret(new Point2D.Double(tank.xPos() + ((Math.sin(Math.toRadians(tank.getTurretAngle())))) + 63, tank.yPos() + ((Math.cos(Math.toRadians(tank.getTurretAngle())))) - 25));
         tank.setCenterBase(new Point2D.Double(tank.xPos() + (tank.getTankWidth() / 2), tank.yPos() + (tank.getTankHeight() / 2)));
 
         // Gets the mouse location relative to the JFrame
+        // https://stackoverflow.com/questions/1439022/get-mouse-position
         mouseLoc = MouseInfo.getPointerInfo().getLocation();
         SwingUtilities.convertPointFromScreen(mouseLoc, this);
 
@@ -177,6 +198,7 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
         mouseDegree = mouseDegree - tank.getBaseAngle();
         tank.setTurretAngle(mouseDegree);
 
+        // https://gamedev.stackexchange.com/questions/36046/how-do-i-make-an-entity-move-in-a-direction
         if (moveUp) {
             tank.setLocation(tank.xPos() + (MOVEMENT_SPEED * Math.sin(Math.toRadians(tank.getBaseAngle()))), tank.yPos() - MOVEMENT_SPEED * Math.cos(Math.toRadians(tank.getBaseAngle())));
         }
@@ -190,6 +212,7 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
             tank.setBaseAngle((tank.getBaseAngle() + 5) % 360);
         }
 
+        // https://stackoverflow.com/questions/72411743/how-to-move-paint-graphics-along-slope?answertab=scoredesc#tab-top
         ArrayList<Bullet> outOfScopeProjectiles = new ArrayList<>(8);
         Rectangle visibleBounds = new Rectangle(0, 0, FRAME_WIDTH, FRAME_HEIGHT);
         for (Bullet bullet : bullets) {
@@ -200,10 +223,15 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
             }
         }
         bullets.removeAll(outOfScopeProjectiles);
-
         repaint();
     }
 
+    /**
+     * Paints everything on the screen, being called by update()
+     * @param g the <code>Graphics</code> object to protect
+     */
+    // https://stackoverflow.com/questions/29585353/paint-with-swing-java
+    // https://stackoverflow.com/questions/8639567/java-rotating-images
     @Override
     public void paintComponent(Graphics g) {
         Graphics2D master = (Graphics2D) g;
@@ -226,18 +254,28 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
         // Paints the bullets
         for (Bullet bullet : bullets) {
             Point2D currentBulletLoc = bullet.getLocation();
-            master.fill(new Ellipse2D.Double(currentBulletLoc.getX() - 2, currentBulletLoc.getY() - 2, 4, 4));
+            master.fill(new Ellipse2D.Double(currentBulletLoc.getX() - 2, currentBulletLoc.getY() - 2, 8, 8));
         }
         g2D.dispose();
     }
 
+    /**
+     * Timer calls this to keep calling update
+     * @param e the event to be processed
+     */
     @Override
     public void actionPerformed(ActionEvent e) {
         update();
     }
 
-    public double angleInRelation(Point mouseLoc, Point2D tankLoc) {
-        double angle = Math.toDegrees(Math.atan2((mouseLoc.getY() - tankLoc.getY()), mouseLoc.getX() - tankLoc.getX()));
+    /**
+     * Finds the angle between point1 in relation to point2
+     * @param point1 - the first point
+     * @param point2 - the second point
+     * @return - the angle between the two points
+     */
+    public double angleInRelation(Point point1, Point2D point2) {
+        double angle = Math.toDegrees(Math.atan2((point1.getY() - point2.getY()), point1.getX() - point2.getX()));
         angle += 90;
         if (angle < 0) {
             angle += 360;
@@ -245,8 +283,16 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
         return angle;
     }
 
-    public static Point2D getPointOnCircle(double degress, double offset, double radius) {
-        double rads = Math.toRadians(degress + offset); // 0 becomes the top
+    /**
+     * Gets a point on a circle, given a degree, offset and radius, gets called by other getPointOnCircle
+     * @param degrees - the degree number to find a point at
+     * @param offset - the offset to the degree
+     * @param radius - the radius of the circle
+     * @return a point on the circle with the specified parameters
+     */
+    // https://stackoverflow.com/questions/72411743/how-to-move-paint-graphics-along-slope?answertab=scoredesc#tab-top
+    public static Point2D getPointOnCircle(double degrees, double offset, double radius) {
+        double rads = Math.toRadians(degrees + offset); // 0 becomes the top
 
         // Calculates the outer point of the line
         double xPosy = Math.cos(rads) * radius;
@@ -255,11 +301,26 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
         return new Point2D.Double(xPosy, yPosy);
     }
 
+    /**
+     Gets a point on a circle, given a degree, offset and radius, gets called by other getPointOnCircle
+     * @param degrees - the degree number to find a point at
+     * @param offset - the offset to the degree
+     * @param radius - the radius of the circle
+     * @param centerX - the X point of the circle
+     * @param centerY - the Y point of the circle
+     * @return the point on the circle with the specified parameters
+     */
+    // https://stackoverflow.com/questions/72411743/how-to-move-paint-graphics-along-slope?answertab=scoredesc#tab-top
     public static Point2D getPointOnCircle(double degress, double offset, double radius, double centerX, double centerY) {
         Point2D poc = getPointOnCircle(degress, offset, radius);
         return new Point2D.Double(poc.getX() + centerX, poc.getY() + centerY);
     }
 
+    /**
+     * Calculates the point at the end of turret
+     * @return the point at the end of the turret
+     */
+    // https://stackoverflow.com/questions/72411743/how-to-move-paint-graphics-along-slope?answertab=scoredesc#tab-top
     public Point2D getBusinessEndOfBarrel() {
         // Calculates the point at the end of the turret
         double centerX = tank.getCenterBase().getX();
@@ -268,6 +329,10 @@ public class GamePanel extends JPanel implements ActionListener, MouseListener {
         return getPointOnCircle(tank.getTurretAngle() + tank.getBaseAngle(), -90, Math.max(tank.getTankWidth(), tank.getTankHeight()) / 2, centerX, centerY);
     }
 
+    /**
+     * Starts the timer that calls update(), starting the game
+     */
+    // https://stackoverflow.com/questions/22366890/java-timer-action-listener
     public void startGame() {
         timer = new Timer(1000 / 60, this);
         timer.start();

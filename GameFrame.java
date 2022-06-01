@@ -4,6 +4,10 @@ public class GameFrame {
     private final JFrame frame = new JFrame(); //creates the frame
     static final int FRAME_HEIGHT = 720; // Height of the JFrame
     static final int FRAME_WIDTH = 1280; // Width of the JFrame
+
+    /**
+     * Creates the gameFrame
+     */
     public GameFrame() {
         frame.setLayout(null);
         frame.setSize(FRAME_WIDTH, FRAME_HEIGHT);

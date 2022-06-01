@@ -11,6 +11,13 @@ public class Bullet {
     private double deltaX;
     private double deltaY;
 
+    /**
+     * Creates a bullet with the starting and ending points as well as speed
+     * @param from - starting point of the bullet
+     * @param to - ending point of the bullet
+     * @param speed - speed at which the bullet should move
+     */
+    // https://stackoverflow.com/questions/72411743/how-to-move-paint-graphics-along-slope?answertab=scoredesc#tab-top
     public Bullet(Point2D from, Point2D to, int speed) {
         this.from = from;
         this.to = to;
@@ -25,19 +32,28 @@ public class Bullet {
         lastUpdate = System.currentTimeMillis();
     }
 
+    /**
+     * Gets the current location of the bullet
+     * @return the point of the bullet location
+     */
     public Point2D getLocation() {
         return current;
     }
 
+    /**
+     * Keeps the bullet moving at a constant rate regardless of the distance
+     */
+    // https://stackoverflow.com/questions/771206/how-do-i-cap-my-framerate-at-60-fps-in-java
+    // https://dewitters.com/dewitters-gameloop/
     public void tick() {
-        long elapsedTime = System.currentTimeMillis() - lastUpdate;
+        long timeElapsed = System.currentTimeMillis() - lastUpdate;
         lastUpdate = System.currentTimeMillis();
 
         double x = current.getX();
         double y = current.getY();
 
-        x += deltaX * (elapsedTime / 1000d);
-        y += deltaY * (elapsedTime / 1000d);
+        x += deltaX * (timeElapsed / 1000d);
+        y += deltaY * (timeElapsed / 1000d);
 
         current.setLocation(x, y);
     }
